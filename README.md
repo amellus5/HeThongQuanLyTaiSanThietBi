@@ -22,11 +22,11 @@ https://hethongquanlythietbitaisan.netlify.app/
 
 ## Tài khoản demo
 Admin
-* Username: admin
+* Username: AD01
 * Password: 123456
 
 Nhân viên
-* Username: user
+* Username: NV01
 * Password: 123456
 
 ## Tác giả
