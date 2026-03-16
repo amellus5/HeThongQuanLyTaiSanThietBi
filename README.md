@@ -20,6 +20,14 @@ Hệ thống giúp quản lý thông tin thiết bị, nhân viên và quá trì
 ## Link demo hệ thống
 https://hethongquanlythietbitaisan.netlify.app/
 
+## Tài khoản demo
+Admin
+* Username: admin
+* Password: 123456
+Nhân viên
+* Username: user
+* Password: 123456
+
 ## Tác giả
 Phạm Thạch Thảo - DH23TIN05 - 235062
 Sinh viên ngành Công nghệ Thông tin
