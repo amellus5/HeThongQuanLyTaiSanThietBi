@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trang Nhân Viên | Hệ Thống QL Tài Sản</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <div class="logo-icon">🧑‍💻</div>
+          <div class="logo-text">
+            <h2>Cổng Cá Nhân</h2>
+            <p>Dịch Vụ Thiết Bị</p>
+          </div>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section">Dịch vụ cá nhân</div>
+        <a href="nhanvien.html" class="active">
+          Tổng quan của tôi
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar">🧑‍💻</div>
+          <div class="user-details">
+            <h4 id="userName">User</h4>
+            <p id="userRole">Nhân viên</p>
+          </div>
+        </div>
+        <button class="btn-logout" onclick="Auth.logout()">
+          Đăng xuất
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="page-header" style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <h1>Xin chào, <span id="welcomeName">bạn</span></h1>
+          <p>Quản lý thiết bị bạn đang mượn và yêu cầu mới</p>
+          <div class="datetime" id="datetime"></div>
+        </div>
+        <button class="btn btn-primary" onclick="openMuonMoi()" style="padding:15px 30px; font-size:16px;">
+          Mượn Thiết Bị Mới
+        </button>
+      </div>
+
+      <!-- Overview Cards -->
+      <div class="stats-grid grid-3">
+        <div class="stat-card pink">
+          <div class="stat-icon">📦</div>
+          <div class="stat-value" id="sDangMuon">0</div>
+          <div class="stat-label">Thiết bị đang mượn</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-icon">✅</div>
+          <div class="stat-value" id="sDaTra">0</div>
+          <div class="stat-label">Thiết bị đã trả (lịch sử)</div>
+        </div>
+        <div class="stat-card purple">
+          <div class="stat-icon">⏰</div>
+          <div class="stat-value" id="sQuaHan">0</div>
+          <div class="stat-label">Thiết bị quá hạn trả</div>
+        </div>
+      </div>
+
+      <!-- Main working area -->
+      <div class="card mt-20">
+        <div class="card-header">
+          <h3>Thiết bị của bạn</h3>
+        </div>
+        <div class="card-body">
+          <div class="tabs">
+            <button class="tab-btn active" data-tab="tabDangMuon" onclick="UI.initTabs();">Đang sử dụng</button>
+            <button class="tab-btn" data-tab="tabLichSu" onclick="UI.initTabs();">Lịch sử mượn/trả</button>
+          </div>
+
+          <div class="tab-content active" id="tabDangMuon">
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Mã phiếu</th>
+                    <th>Thiết bị</th>
+                    <th>Ngày mượn</th>
+                    <th>Hạn trả dự kiến</th>
+                    <th>Tình trạng</th>
+                    <th>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody id="tbDangMuon"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="tab-content" id="tabLichSu">
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Mã phiếu</th>
+                    <th>Thiết bị</th>
+                    <th>Ngày mượn</th>
+                    <th>Hạn trả</th>
+                    <th>Ngày trả thực tế</th>
+                    <th>Trạng thái</th>
+                  </tr>
+                </thead>
+                <tbody id="tbLichSu"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Available Equipment Info -->
+      <div class="card mt-30">
+        <div class="card-header">
+          <h3>Danh mục thiết bị có sẵn (Tham khảo)</h3>
+          <div class="filter-bar">
+             <select id="filterLoai" onchange="loadAvailable()">
+               <option value="">Tất cả loại</option>
+             </select>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Mã TB</th>
+                  <th>Tên thiết bị</th>
+                  <th>Loại</th>
+                  <th>Tình trạng</th>
+                </tr>
+              </thead>
+              <tbody id="tbSanSang"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal Mượn Mới -->
+  <div class="modal-overlay" id="modalMuon">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Đăng Ký Mượn Thiết Bị</h3>
+        <button class="modal-close" onclick="UI.closeModal('modalMuon')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group no-icon">
+          <label>Chọn thiết bị muốn mượn</label>
+          <select id="fMaTB"></select>
+        </div>
+        <div class="form-group no-icon">
+          <label>Dự kiến ngày trả (tối đa 30 ngày)</label>
+          <input type="date" id="fNgayTra">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="UI.closeModal('modalMuon')">Hủy</button>
+        <button class="btn btn-primary" onclick="confirmMuon()">Gửi yêu cầu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Trả Thiết bị -->
+  <div class="modal-overlay" id="modalTra">
+    <div class="modal" style="max-width:400px;">
+      <div class="modal-header">
+        <h3>Trả Thiết Bị</h3>
+        <button class="modal-close" onclick="UI.closeModal('modalTra')">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="margin-bottom:15px; color:var(--text-secondary); font-size:14px;">Bạn đang trả thiết bị <strong id="traTenTB" style="color:var(--text-primary)"></strong>.</p>
+        <input type="hidden" id="traMaPhieu">
+        <div class="form-group no-icon">
+          <label>Tình trạng thiết bị hiện tại</label>
+          <textarea id="fTinhTrang" rows="3" placeholder="VD: Hoạt động tốt, còn đầy đủ pin sạc" style="width:100%;padding:12px;border:2px solid rgba(244,114,168,0.2);border-radius:12px;font-family:Inter,sans-serif;font-size:14px;outline:none;resize:vertical;"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="UI.closeModal('modalTra')">Hủy</button>
+        <button class="btn btn-success" onclick="confirmTra()">Bàn giao thiết bị</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    const user = Auth.requireAuth('nv'); // This will just check if user exists. We let "Nhân viên" pass by not strictly requiring 'admin' role in Auth
+    if (user && user.vaiTro === 'Quản lý') {
+      window.location.href = 'admin.html'; // Admin shouldn't be here
+    }
+
+    if (user) {
+      document.getElementById('welcomeName').textContent = user.hoTen;
+      UI.loadUserInfo();
+      UI.startClock('datetime');
+      UI.initTabs();
+      initFilters();
+      loadDashboard();
+    }
+
+    function initFilters() {
+      const select = document.getElementById('filterLoai');
+      DB.getLoaiTB().forEach(l => {
+        select.innerHTML += `<option value="${l.maLoai}">${l.tenLoai}</option>`;
+      });
+    }
+
+    function getTBName(maTB) {
+      const tb = DB.getThietBiById(maTB);
+      return tb ? tb.tenTB : maTB;
+    }
+
+    function isOverdue(p) {
+      return p.trangThaiPhieu === 'Đang mượn' && new Date(p.ngayTraDuKien) < new Date();
+    }
+
+    function loadDashboard() {
+      const allPhieu = DB.getPhieuByNV(user.maNV);
+      const dangMuon = allPhieu.filter(p => p.trangThaiPhieu === 'Đang mượn' || p.trangThaiPhieu === 'Chờ duyệt mượn' || p.trangThaiPhieu === 'Chờ duyệt trả');
+      const daTra = allPhieu.filter(p => p.trangThaiPhieu === 'Đã trả');
+      const quaHan = dangMuon.filter(p => isOverdue(p));
+
+      // Update counters
+      document.getElementById('sDangMuon').textContent = dangMuon.length;
+      document.getElementById('sDaTra').textContent = daTra.length;
+      document.getElementById('sQuaHan').textContent = quaHan.length;
+
+      // Table Dang Muon
+      const tbDangMuon = document.getElementById('tbDangMuon');
+      if (dangMuon.length === 0) {
+        tbDangMuon.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="icon">📦</div><h3>Bạn không có thiết bị nào đang mượn</h3></div></td></tr>';
+      } else {
+        tbDangMuon.innerHTML = dangMuon.map(p => {
+          const overdue = isOverdue(p);
+          let badge;
+          if (p.trangThaiPhieu === 'Chờ duyệt mượn') badge = '<span class="badge badge-info">Đang duyệt mượn</span>';
+          else if (p.trangThaiPhieu === 'Chờ duyệt trả') badge = '<span class="badge badge-warning">Đang duyệt trả</span>';
+          else if (overdue) badge = '<span class="badge badge-danger">Quá hạn</span>';
+          else badge = '<span class="badge badge-success">Đang sử dụng</span>';
+
+          let actions = '';
+          if (p.trangThaiPhieu === 'Đang mượn') {
+             actions = `<button class="btn btn-success btn-sm" onclick="openTra(${p.maPhieu}, '${getTBName(p.maTB)}')">Yêu cầu trả</button>`;
+          }
+
+          return `<tr>
+            <td><strong>#${p.maPhieu}</strong></td>
+            <td>${getTBName(p.maTB)}</td>
+            <td>${UI.formatDateTime(p.ngayMuon)}</td>
+            <td>${UI.formatDate(p.ngayTraDuKien)}</td>
+            <td>${badge}</td>
+            <td>${actions}</td>
+          </tr>`;
+        }).join('');
+      }
+
+      // Table Lich Su
+      const tbLichSu = document.getElementById('tbLichSu');
+      if (allPhieu.length === 0) {
+        tbLichSu.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="icon">📋</div><h3>Chưa có lịch sử giao dịch</h3></div></td></tr>';
+      } else {
+        tbLichSu.innerHTML = allPhieu.reverse().map(p => {
+          const overdue = isOverdue(p);
+          let badge;
+          if (p.trangThaiPhieu === 'Đã trả') badge = '<span class="badge badge-success">Đã trả</span>';
+          else if (p.trangThaiPhieu === 'Từ chối') badge = '<span class="badge badge-danger">Từ chối</span>';
+          else if (p.trangThaiPhieu === 'Chờ duyệt mượn') badge = '<span class="badge badge-info">Chờ duyệt mượn</span>';
+          else if (p.trangThaiPhieu === 'Chờ duyệt trả') badge = '<span class="badge badge-warning">Chờ duyệt trả</span>';
+          else if (overdue) badge = '<span class="badge badge-danger">Quá hạn</span>';
+          else badge = '<span class="badge badge-warning">Đang mượn</span>';
+
+          return `<tr>
+            <td><strong>#${p.maPhieu}</strong></td>
+            <td>${getTBName(p.maTB)}</td>
+            <td>${UI.formatDateTime(p.ngayMuon)}</td>
+            <td>${UI.formatDate(p.ngayTraDuKien)}</td>
+            <td>${p.ngayTraThucTe ? UI.formatDateTime(p.ngayTraThucTe) : '—'}</td>
+            <td>${badge}</td>
+          </tr>`;
+        }).join('');
+      }
+
+      loadAvailable();
+    }
+
+    function loadAvailable() {
+      const list = DB.getThietBi().filter(t => t.trangThai === 'Sẵn sàng');
+      const filterLoai = document.getElementById('filterLoai').value;
+      const filteredList = filterLoai ? list.filter(t => t.maLoai === filterLoai) : list;
+
+      const loaiMap = {};
+      DB.getLoaiTB().forEach(l => loaiMap[l.maLoai] = l.tenLoai);
+
+      const tbody = document.getElementById('tbSanSang');
+      if (filteredList.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state">Không có thiết bị sẵn sàng trong danh mục này</div></td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = filteredList.map(tb => `
+        <tr>
+          <td><strong>${tb.maTB}</strong></td>
+          <td>${tb.tenTB}</td>
+          <td><span class="badge badge-info">${loaiMap[tb.maLoai] || tb.maLoai}</span></td>
+          <td><span class="badge badge-success">Sẵn sàng phục vụ</span></td>
+        </tr>
+      `).join('');
+    }
+
+    function openMuonMoi() {
+      const select = document.getElementById('fMaTB');
+      const ready = DB.getThietBi().filter(t => t.trangThai === 'Sẵn sàng');
+
+      if (ready.length === 0) {
+        UI.showToast('Hiện không có thiết bị nào sẵn sàng để mượn.', 'warning');
+        return;
+      }
+
+      select.innerHTML = ready.map(t => `<option value="${t.maTB}">${t.tenTB} (Mã: ${t.maTB})</option>`).join('');
+
+      // Default date to tomorrow
+      const d = new Date();
+      d.setDate(d.getDate() + 1);
+      document.getElementById('fNgayTra').value = d.toISOString().split('T')[0];
+
+      UI.openModal('modalMuon');
+    }
+
+    function confirmMuon() {
+      const maTB = document.getElementById('fMaTB').value;
+      const ngayTraDK = document.getElementById('fNgayTra').value;
+
+      if (!maTB || !ngayTraDK) {
+        UI.showToast('Vui lòng chọn thiết bị và ngày dự kiến trả!', 'warning');
+        return;
+      }
+
+      // Validate date
+      if (new Date(ngayTraDK) < new Date()) {
+        UI.showToast('Ngày trả dự kiến phải ở tương lai!', 'error');
+        return;
+      }
+
+      DB.addPhieu({
+        maNV: user.maNV,
+        maTB: maTB,
+        ngayMuon: new Date().toISOString(),
+        ngayTraDuKien: ngayTraDK,
+        ngayTraThucTe: null,
+        tinhTrangKhiTra: null,
+        trangThaiPhieu: 'Chờ duyệt mượn'
+      });
+
+      UI.showToast('Đã gửi yêu cầu mượn! Vui lòng chờ phản hồi từ quản lý.', 'success');
+      UI.closeModal('modalMuon');
+      loadDashboard();
+    }
+
+    function openTra(maPhieu, tenTB) {
+      document.getElementById('traMaPhieu').value = maPhieu;
+      document.getElementById('traTenTB').textContent = tenTB;
+      document.getElementById('fTinhTrang').value = 'Bình thường';
+      UI.openModal('modalTra');
+    }
+
+    function confirmTra() {
+      const maPhieu = parseInt(document.getElementById('traMaPhieu').value);
+      const tinhTrang = document.getElementById('fTinhTrang').value.trim() || 'Bình thường';
+
+      DB.yeuCauTra(maPhieu, tinhTrang);
+      UI.showToast('Đã gửi yêu cầu trả thiết bị!', 'success');
+      UI.closeModal('modalTra');
+      loadDashboard();
+    }
+  </script>
+</body>
+</html>

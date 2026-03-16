@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Báo Cáo Thống Kê | Hệ Thống QL Tài Sản</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <div class="logo-icon">🏢</div>
+          <div class="logo-text"><h2>Quản Lý Tài Sản</h2><p>Hệ Thống Thiết Bị</p></div>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-section">Tổng quan</div>
+        <a href="admin.html">Trang chủ</a>
+        <div class="nav-section">Quản lý</div>
+        <a href="ql-nhanvien.html">Quản lý Nhân viên</a>
+        <a href="ql-loaitb.html">Quản lý Loại TB</a>
+        <a href="ql-thietbi.html">Quản lý Thiết bị</a>
+        <a href="ql-phieumuon.html">Phiếu mượn trả</a>
+        <div class="nav-section">Báo cáo</div>
+        <a href="baocao.html" class="active">Thống kê & Báo cáo</a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar">👤</div>
+          <div class="user-details"><h4 id="userName">Admin</h4><p id="userRole">Quản lý</p></div>
+        </div>
+        <button class="btn-logout" onclick="Auth.logout()">Đăng xuất</button>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <div class="page-header">
+        <h1>Báo Cáo & Thống Kê</h1>
+        <p>Tổng hợp số liệu và báo cáo hệ thống</p>
+      </div>
+
+      <!-- Summary Cards -->
+      <div class="report-summary" id="reportSummary"></div>
+
+      <div class="grid-2">
+        <!-- Equipment by Type -->
+        <div class="card">
+          <div class="card-header">
+            <h3>Thiết bị theo loại</h3>
+          </div>
+          <div class="card-body">
+            <div class="chart-container">
+              <div class="chart-bar-group" id="chartLoai"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Equipment by Status -->
+        <div class="card">
+          <div class="card-header">
+            <h3>Thiết bị theo trạng thái</h3>
+          </div>
+          <div class="card-body">
+            <div class="chart-container">
+              <div class="chart-bar-group" id="chartTrangThai"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Overdue list -->
+      <div class="card mt-30">
+        <div class="card-header">
+          <h3>Danh sách quá hạn trả</h3>
+        </div>
+        <div class="card-body">
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Mã phiếu</th>
+                  <th>Nhân viên</th>
+                  <th>Thiết bị</th>
+                  <th>Ngày mượn</th>
+                  <th>Hạn trả</th>
+                  <th>Số ngày quá hạn</th>
+                </tr>
+              </thead>
+              <tbody id="tbQuaHan"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Borrow statistics by employee -->
+      <div class="card mt-30">
+        <div class="card-header">
+          <h3>Thống kê mượn theo nhân viên</h3>
+        </div>
+        <div class="card-body">
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Mã NV</th>
+                  <th>Họ tên</th>
+                  <th>Phòng ban</th>
+                  <th>Tổng lần mượn</th>
+                  <th>Đang mượn</th>
+                  <th>Đã trả</th>
+                </tr>
+              </thead>
+              <tbody id="tbNhanVien"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Asset value -->
+      <div class="card mt-30">
+        <div class="card-header">
+          <h3>Giá trị tài sản theo loại</h3>
+        </div>
+        <div class="card-body">
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Loại thiết bị</th>
+                  <th>Số lượng</th>
+                  <th>Tổng giá trị</th>
+                  <th>Trung bình</th>
+                </tr>
+              </thead>
+              <tbody id="tbGiaTri"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    const user = Auth.requireAuth('admin');
+    if (user) { UI.loadUserInfo(); loadReport(); }
+
+    function loadReport() {
+      const stats = DB.getStats();
+      const phieu = DB.getPhieuMuonTra();
+      const thietBi = DB.getThietBi();
+      const nhanVien = DB.getNhanVien();
+      const loaiTB = DB.getLoaiTB();
+
+      // Summary
+      document.getElementById('reportSummary').innerHTML = `
+        <div class="report-item"><div class="value">${stats.tongThietBi}</div><div class="label">Tổng thiết bị</div></div>
+        <div class="report-item"><div class="value">${UI.formatMoney(stats.tongGiaTri)}</div><div class="label">Tổng giá trị tài sản</div></div>
+        <div class="report-item"><div class="value">${stats.dangMuon}</div><div class="label">Đang cho mượn</div></div>
+        <div class="report-item"><div class="value">${stats.quaHan}</div><div class="label">Quá hạn trả</div></div>
+        <div class="report-item"><div class="value">${stats.tongNhanVien}</div><div class="label">Nhân viên</div></div>
+        <div class="report-item"><div class="value">${phieu.length}</div><div class="label">Tổng phiếu mượn</div></div>
+      `;
+
+      // Charts
+      const typeColors = ['pink', 'green', 'purple', 'orange'];
+      renderBarChart('chartLoai', stats.thietBiTheoLoai.map((item, i) => ({
+        label: item.tenLoai,
+        value: item.soLuong,
+        color: typeColors[i % typeColors.length]
+      })));
+
+      renderBarChart('chartTrangThai', [
+        { label: 'Sẵn sàng', value: stats.sanSang, color: 'green' },
+        { label: 'Đang dùng', value: stats.dangDung, color: 'orange' },
+        { label: 'Hỏng', value: stats.hong, color: 'pink' },
+      ]);
+
+      // Overdue
+      const now = new Date();
+      const overdue = phieu.filter(p => !p.ngayTraThucTe && new Date(p.ngayTraDuKien) < now);
+      const tbQuaHan = document.getElementById('tbQuaHan');
+      if (overdue.length === 0) {
+        tbQuaHan.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="icon">🎉</div><h3>Không có thiết bị quá hạn</h3><p>Tất cả đều đúng tiến độ!</p></div></td></tr>';
+      } else {
+        tbQuaHan.innerHTML = overdue.map(p => {
+          const nv = DB.getNhanVienById(p.maNV);
+          const tb = DB.getThietBiById(p.maTB);
+          const days = Math.ceil((now - new Date(p.ngayTraDuKien)) / (1000 * 60 * 60 * 24));
+          return `<tr>
+            <td><strong>#${p.maPhieu}</strong></td>
+            <td>${nv ? nv.hoTen : p.maNV}</td>
+            <td>${tb ? tb.tenTB : p.maTB}</td>
+            <td>${UI.formatDateTime(p.ngayMuon)}</td>
+            <td>${UI.formatDate(p.ngayTraDuKien)}</td>
+            <td><span class="badge badge-danger">🔴 ${days} ngày</span></td>
+          </tr>`;
+        }).join('');
+      }
+
+      // By employee
+      const tbNhanVien = document.getElementById('tbNhanVien');
+      tbNhanVien.innerHTML = nhanVien.filter(nv => nv.vaiTro === 'Nhân viên').map(nv => {
+        const nvPhieu = phieu.filter(p => p.maNV === nv.maNV);
+        const dangMuon = nvPhieu.filter(p => !p.ngayTraThucTe).length;
+        const daTra = nvPhieu.filter(p => p.ngayTraThucTe).length;
+        return `<tr>
+          <td><strong>${nv.maNV}</strong></td>
+          <td>${nv.hoTen}</td>
+          <td>${nv.phongBan || '—'}</td>
+          <td><span class="badge badge-pink">${nvPhieu.length}</span></td>
+          <td>${dangMuon > 0 ? `<span class="badge badge-warning">${dangMuon}</span>` : '0'}</td>
+          <td>${daTra > 0 ? `<span class="badge badge-success">${daTra}</span>` : '0'}</td>
+        </tr>`;
+      }).join('');
+
+      // Asset values by type
+      const tbGiaTri = document.getElementById('tbGiaTri');
+      tbGiaTri.innerHTML = loaiTB.map(loai => {
+        const items = thietBi.filter(x => x.maLoai === loai.maLoai);
+        const total = items.reduce((s, x) => s + (x.donGia || 0), 0);
+        const avg = items.length ? total / items.length : 0;
+        return `<tr>
+          <td><strong>${loai.tenLoai}</strong></td>
+          <td><span class="badge badge-info">${items.length}</span></td>
+          <td>${UI.formatMoney(total)}</td>
+          <td>${UI.formatMoney(avg)}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    function renderBarChart(containerId, data) {
+      const container = document.getElementById(containerId);
+      const maxVal = Math.max(...data.map(d => d.value), 1);
+      container.innerHTML = data.map(d => {
+        const height = Math.max(20, (d.value / maxVal) * 180);
+        return `
+          <div class="chart-bar-item">
+            <div class="chart-bar-value">${d.value}</div>
+            <div class="chart-bar ${d.color}" style="height:${height}px"></div>
+            <div class="chart-bar-label">${d.label}</div>
+          </div>
+        `;
+      }).join('');
+    }
+  </script>
+</body>
+</html>

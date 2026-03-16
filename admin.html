@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Trang quản trị - Hệ thống quản lý tài sản thiết bị">
+  <title>Trang Quản Trị | Hệ Thống QL Tài Sản Thiết Bị</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <div class="logo-icon">🏢</div>
+          <div class="logo-text">
+            <h2>Quản Lý Tài Sản</h2>
+            <p>Hệ Thống Thiết Bị</p>
+          </div>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-section">Tổng quan</div>
+        <a href="admin.html" class="active">
+          Trang chủ
+        </a>
+
+        <div class="nav-section">Quản lý</div>
+        <a href="ql-nhanvien.html">
+          Quản lý Nhân viên
+        </a>
+        <a href="ql-loaitb.html">
+          Quản lý Loại TB
+        </a>
+        <a href="ql-thietbi.html">
+          Quản lý Thiết bị
+        </a>
+        <a href="ql-phieumuon.html">
+          Phiếu mượn trả
+        </a>
+
+        <div class="nav-section">Báo cáo</div>
+        <a href="baocao.html">
+          Thống kê & Báo cáo
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar">👤</div>
+          <div class="user-details">
+            <h4 id="userName">Admin</h4>
+            <p id="userRole">Quản lý</p>
+          </div>
+        </div>
+        <button class="btn-logout" onclick="Auth.logout()">
+          Đăng xuất
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="page-header">
+        <h1>Tổng Quan Hệ Thống</h1>
+        <p id="welcomeText">Chào mừng bạn đến với hệ thống quản lý</p>
+        <div class="datetime" id="datetime"></div>
+      </div>
+
+      <!-- Stats Grid -->
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-card pink">
+          <div class="stat-icon">💻</div>
+          <div class="stat-value" id="statTongTB">0</div>
+          <div class="stat-label">Tổng thiết bị</div>
+        </div>
+        <div class="stat-card orange">
+          <div class="stat-icon">📦</div>
+          <div class="stat-value" id="statDangMuon">0</div>
+          <div class="stat-label">Đang cho mượn</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-icon">👥</div>
+          <div class="stat-value" id="statNhanVien">0</div>
+          <div class="stat-label">Nhân viên</div>
+        </div>
+        <div class="stat-card purple">
+          <div class="stat-icon">⏳</div>
+          <div class="stat-value" id="statChoDuyet">0</div>
+          <div class="stat-label">Yêu cầu chờ duyệt</div>
+        </div>
+      </div>
+
+      <!-- Quick Info -->
+      <div class="grid-2">
+        <!-- Equipment by status -->
+        <div class="card">
+          <div class="card-header">
+            <h3>Thiết bị theo trạng thái</h3>
+          </div>
+          <div class="card-body">
+            <div class="chart-container">
+              <div class="chart-bar-group" id="statusChart"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent borrow records -->
+        <div class="card">
+          <div class="card-header">
+            <h3>Phiếu mượn gần đây</h3>
+          </div>
+          <div class="card-body">
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Mã phiếu</th>
+                    <th>Nhân viên</th>
+                    <th>Thiết bị</th>
+                    <th>Trạng thái</th>
+                  </tr>
+                </thead>
+                <tbody id="recentPhieu"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Equipment by type -->
+      <div class="card mt-30">
+        <div class="card-header">
+          <h3>Thiết bị theo loại</h3>
+        </div>
+        <div class="card-body">
+          <div class="chart-container">
+            <div class="chart-bar-group" id="typeChart"></div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    const user = Auth.requireAuth('admin');
+    if (user) {
+      document.getElementById('welcomeText').textContent = `Xin chào, ${user.hoTen}`;
+      UI.loadUserInfo();
+      UI.startClock('datetime');
+      UI.setActiveSidebar('admin.html');
+      loadDashboard();
+    }
+
+    function loadDashboard() {
+      const stats = DB.getStats();
+
+      // Stats cards
+      animateCount('statTongTB', stats.tongThietBi);
+      animateCount('statDangMuon', stats.dangMuon);
+      animateCount('statNhanVien', stats.tongNhanVien);
+      animateCount('statChoDuyet', DB.getPhieuChoDuyet().length);
+
+      // Status chart
+      const statusData = [
+        { label: 'Sẵn sàng', value: stats.sanSang, color: 'green' },
+        { label: 'Đang dùng', value: stats.dangDung, color: 'orange' },
+        { label: 'Hỏng', value: stats.hong, color: 'pink' },
+      ];
+      renderBarChart('statusChart', statusData);
+
+      // Type chart
+      const typeColors = ['pink', 'green', 'purple', 'orange'];
+      const typeData = stats.thietBiTheoLoai.map((item, i) => ({
+        label: item.tenLoai,
+        value: item.soLuong,
+        color: typeColors[i % typeColors.length]
+      }));
+      renderBarChart('typeChart', typeData);
+
+      // Recent borrow records
+      const phieuList = DB.getPhieuMuonTra().slice(-5).reverse();
+      const tbody = document.getElementById('recentPhieu');
+      tbody.innerHTML = phieuList.map(p => {
+        const nv = DB.getNhanVienById(p.maNV);
+        const tb = DB.getThietBiById(p.maTB);
+        let statusBadge = '';
+        if (p.trangThaiPhieu === 'Đã trả') statusBadge = '<span class="badge badge-success">Đã trả</span>';
+        else if (p.trangThaiPhieu === 'Từ chối') statusBadge = '<span class="badge badge-danger">Từ chối</span>';
+        else if (p.trangThaiPhieu === 'Chờ duyệt mượn' || p.trangThaiPhieu === 'Chờ duyệt trả') statusBadge = '<span class="badge badge-info">' + p.trangThaiPhieu + '</span>';
+        else statusBadge = '<span class="badge badge-warning">Đang mượn</span>';
+
+        return `<tr>
+          <td>#${p.maPhieu}</td>
+          <td>${nv ? nv.hoTen : p.maNV}</td>
+          <td>${tb ? tb.tenTB : p.maTB}</td>
+          <td>${statusBadge}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    function animateCount(id, target) {
+      const el = document.getElementById(id);
+      let current = 0;
+      const step = Math.max(1, Math.ceil(target / 30));
+      const timer = setInterval(() => {
+        current += step;
+        if (current >= target) {
+          current = target;
+          clearInterval(timer);
+        }
+        el.textContent = current;
+      }, 40);
+    }
+
+    function renderBarChart(containerId, data) {
+      const container = document.getElementById(containerId);
+      const maxVal = Math.max(...data.map(d => d.value), 1);
+
+      container.innerHTML = data.map(d => {
+        const height = Math.max(20, (d.value / maxVal) * 180);
+        return `
+          <div class="chart-bar-item">
+            <div class="chart-bar-value">${d.value}</div>
+            <div class="chart-bar ${d.color}" style="height:${height}px"></div>
+            <div class="chart-bar-label">${d.label}</div>
+          </div>
+        `;
+      }).join('');
+    }
+  </script>
+</body>
+</html>

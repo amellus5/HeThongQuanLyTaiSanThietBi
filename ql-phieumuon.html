@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quản Lý Phiếu Mượn Trả | Hệ Thống QL Tài Sản</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <div class="logo-icon">🏢</div>
+          <div class="logo-text"><h2>Quản Lý Tài Sản</h2><p>Hệ Thống Thiết Bị</p></div>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-section">Tổng quan</div>
+        <a href="admin.html">Trang chủ</a>
+        <div class="nav-section">Quản lý</div>
+        <a href="ql-nhanvien.html">Quản lý Nhân viên</a>
+        <a href="ql-loaitb.html">Quản lý Loại TB</a>
+        <a href="ql-thietbi.html">Quản lý Thiết bị</a>
+        <a href="ql-phieumuon.html" class="active">Phiếu mượn trả</a>
+        <div class="nav-section">Báo cáo</div>
+        <a href="baocao.html">Thống kê & Báo cáo</a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar">👤</div>
+          <div class="user-details"><h4 id="userName">Admin</h4><p id="userRole">Quản lý</p></div>
+        </div>
+        <button class="btn-logout" onclick="Auth.logout()">Đăng xuất</button>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <div class="page-header">
+        <h1>Quản Lý Phiếu Mượn Trả</h1>
+        <p>Theo dõi tình trạng mượn trả thiết bị</p>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>Phiếu Mượn Trả</h3>
+          <button class="btn btn-primary" onclick="openAddPhieu()">Tạo phiếu mượn</button>
+        </div>
+        <div class="card-body">
+          <!-- Tabs -->
+          <div class="tabs">
+            <button class="tab-btn active" data-tab="tabChoDuyet" onclick="switchTab('tabChoDuyet', this)">Chờ duyệt</button>
+            <button class="tab-btn" data-tab="tabDangMuon" onclick="switchTab('tabDangMuon', this)">Đang mượn</button>
+            <button class="tab-btn" data-tab="tabDaTra" onclick="switchTab('tabDaTra', this)">Đã trả</button>
+            <button class="tab-btn" data-tab="tabTatCa" onclick="switchTab('tabTatCa', this)">Tất cả</button>
+          </div>
+
+          <div class="tab-content active" id="tabChoDuyet">
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Mã phiếu</th>
+                    <th>Nhân viên</th>
+                    <th>Thiết bị</th>
+                    <th>Ngày yêu cầu</th>
+                    <th>Loại duyệt</th>
+                    <th>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody id="tbChoDuyet"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="tab-content" id="tabDangMuon">
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Mã phiếu</th>
+                    <th>Nhân viên</th>
+                    <th>Thiết bị</th>
+                    <th>Ngày mượn</th>
+                    <th>Hạn trả</th>
+                    <th>Trạng thái</th>
+                    <th>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody id="tbDangMuon"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="tab-content" id="tabDaTra">
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Mã phiếu</th>
+                    <th>Nhân viên</th>
+                    <th>Thiết bị</th>
+                    <th>Ngày mượn</th>
+                    <th>Ngày trả</th>
+                    <th>Tình trạng khi trả</th>
+                    <th>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody id="tbDaTra"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="tab-content" id="tabTatCa">
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Mã phiếu</th>
+                    <th>Nhân viên</th>
+                    <th>Thiết bị</th>
+                    <th>Ngày mượn</th>
+                    <th>Hạn trả</th>
+                    <th>Ngày trả TT</th>
+                    <th>Trạng thái</th>
+                    <th>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody id="tbTatCa"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal Tạo phiếu mượn -->
+  <div class="modal-overlay" id="modalPhieu">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Tạo Phiếu Mượn Mới</h3>
+        <button class="modal-close" onclick="UI.closeModal('modalPhieu')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group no-icon">
+          <label>Nhân viên</label>
+          <select id="fMaNV"></select>
+        </div>
+        <div class="form-group no-icon">
+          <label>Thiết bị (chỉ hiển thị thiết bị sẵn sàng)</label>
+          <select id="fMaTB"></select>
+        </div>
+        <div class="form-group no-icon">
+          <label>Ngày trả dự kiến</label>
+          <input type="date" id="fNgayTraDK">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="UI.closeModal('modalPhieu')">Hủy</button>
+        <button class="btn btn-primary" onclick="savePhieu()">Tạo phiếu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Trả thiết bị -->
+  <div class="modal-overlay" id="modalTra">
+    <div class="modal" style="max-width:420px">
+      <div class="modal-header">
+        <h3>Xác Nhận Trả Thiết Bị</h3>
+        <button class="modal-close" onclick="UI.closeModal('modalTra')">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="traPhieuId">
+        <div class="form-group no-icon">
+          <label>Tình trạng khi trả</label>
+          <textarea id="fTinhTrang" rows="3" placeholder="VD: Máy hoạt động bình thường, đầy đủ phụ kiện" style="width:100%;padding:12px;border:2px solid rgba(244,114,168,0.2);border-radius:12px;font-family:Inter,sans-serif;font-size:14px;outline:none;resize:vertical;transition:all 0.3s;"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="UI.closeModal('modalTra')">Hủy</button>
+        <button class="btn btn-success" onclick="confirmTra()">Xác nhận trả</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    const user = Auth.requireAuth('admin');
+    if (user) { UI.loadUserInfo(); loadAll(); }
+
+    function switchTab(tabId, btn) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(tabId).classList.add('active');
+    }
+
+    function loadAll() {
+      loadChoDuyet();
+      loadDangMuon();
+      loadDaTra();
+      loadTatCa();
+    }
+
+    function getInfo(p) {
+      const nv = DB.getNhanVienById(p.maNV);
+      const tb = DB.getThietBiById(p.maTB);
+      return {
+        tenNV: nv ? nv.hoTen : p.maNV,
+        tenTB: tb ? tb.tenTB : p.maTB,
+      };
+    }
+
+    function isOverdue(p) {
+      return p.trangThaiPhieu === 'Đang mượn' && new Date(p.ngayTraDuKien) < new Date();
+    }
+
+    function loadChoDuyet() {
+      const list = DB.getPhieuChoDuyet();
+      const tbody = document.getElementById('tbChoDuyet');
+      if (list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><h3>Không có phiếu chờ duyệt</h3></div></td></tr>';
+        return;
+      }
+      tbody.innerHTML = list.map(p => {
+        const info = getInfo(p);
+        const isMuon = p.trangThaiPhieu === 'Chờ duyệt mượn';
+        const badge = isMuon ? '<span class="badge badge-info">Duyệt mượn</span>' : '<span class="badge badge-warning">Duyệt trả</span>';
+        
+        let acceptBtn, rejectBtn;
+        if (isMuon) {
+            acceptBtn = `<button class="btn btn-success btn-sm" onclick="duyetMuon(${p.maPhieu}, true)">Duyệt mượn</button>`;
+            rejectBtn = `<button class="btn btn-danger btn-sm" onclick="duyetMuon(${p.maPhieu}, false)">Từ chối</button>`;
+        } else {
+            acceptBtn = `<button class="btn btn-success btn-sm" onclick="duyetTra(${p.maPhieu}, true)">Duyệt trả</button>`;
+            rejectBtn = `<button class="btn btn-danger btn-sm" onclick="duyetTra(${p.maPhieu}, false)">Từ chối</button>`;
+        }
+
+        return `<tr>
+          <td><strong>#${p.maPhieu}</strong></td>
+          <td>${info.tenNV}</td>
+          <td>${info.tenTB}</td>
+          <td>${UI.formatDateTime(p.ngayMuon)}</td>
+          <td>${badge}</td>
+          <td>
+            <div class="btn-group">
+              ${acceptBtn}
+              ${rejectBtn}
+              <button class="btn btn-danger btn-icon" onclick="deletePhieu(${p.maPhieu})" title="Xóa">🗑️</button>
+            </div>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    function loadDangMuon() {
+      const list = DB.getPhieuDangMuon();
+      const tbody = document.getElementById('tbDangMuon');
+      if (list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><h3>Không có phiếu đang mượn</h3></div></td></tr>';
+        return;
+      }
+      tbody.innerHTML = list.map(p => {
+        const info = getInfo(p);
+        const overdue = isOverdue(p);
+        return `<tr>
+          <td><strong>#${p.maPhieu}</strong></td>
+          <td>${info.tenNV}</td>
+          <td>${info.tenTB}</td>
+          <td>${UI.formatDateTime(p.ngayMuon)}</td>
+          <td>${UI.formatDate(p.ngayTraDuKien)}</td>
+          <td>${overdue ? '<span class="badge badge-danger">Quá hạn</span>' : '<span class="badge badge-warning">Đang mượn</span>'}</td>
+          <td>
+            <div class="btn-group">
+              <button class="btn btn-success btn-sm" onclick="openTra(${p.maPhieu})">Trả lại</button>
+              <button class="btn btn-danger btn-icon" onclick="deletePhieu(${p.maPhieu})" title="Xóa">🗑️</button>
+            </div>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    function loadDaTra() {
+      const list = DB.getPhieuDaTra();
+      const tbody = document.getElementById('tbDaTra');
+      if (list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><h3>Chưa có phiếu đã trả</h3></div></td></tr>';
+        return;
+      }
+      tbody.innerHTML = list.map(p => {
+        const info = getInfo(p);
+        return `<tr>
+          <td><strong>#${p.maPhieu}</strong></td>
+          <td>${info.tenNV}</td>
+          <td>${info.tenTB}</td>
+          <td>${UI.formatDateTime(p.ngayMuon)}</td>
+          <td>${UI.formatDateTime(p.ngayTraThucTe)}</td>
+          <td>${p.tinhTrangKhiTra || '—'}</td>
+          <td>
+             <button class="btn btn-danger btn-icon" onclick="deletePhieu(${p.maPhieu})" title="Xóa">🗑️</button>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    function loadTatCa() {
+      const list = DB.getPhieuMuonTra();
+      const tbody = document.getElementById('tbTatCa');
+      if (list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state"><h3>Chưa có phiếu nào</h3></div></td></tr>';
+        return;
+      }
+      tbody.innerHTML = list.map(p => {
+        const info = getInfo(p);
+        const overdue = isOverdue(p);
+        let badge;
+        if (p.trangThaiPhieu === 'Đã trả') badge = '<span class="badge badge-success">Đã trả</span>';
+        else if (p.trangThaiPhieu === 'Từ chối') badge = '<span class="badge badge-danger">Từ chối</span>';
+        else if (p.trangThaiPhieu === 'Chờ duyệt mượn') badge = '<span class="badge badge-info">Chờ duyệt mượn</span>';
+        else if (p.trangThaiPhieu === 'Chờ duyệt trả') badge = '<span class="badge badge-warning">Chờ duyệt trả</span>';
+        else if (overdue) badge = '<span class="badge badge-danger">Quá hạn</span>';
+        else badge = '<span class="badge badge-warning">Đang mượn</span>';
+
+        return `<tr>
+          <td><strong>#${p.maPhieu}</strong></td>
+          <td>${info.tenNV}</td>
+          <td>${info.tenTB}</td>
+          <td>${UI.formatDateTime(p.ngayMuon)}</td>
+          <td>${UI.formatDate(p.ngayTraDuKien)}</td>
+          <td>${p.ngayTraThucTe ? UI.formatDateTime(p.ngayTraThucTe) : '—'}</td>
+          <td>${badge}</td>
+          <td>
+            <div class="btn-group">
+              ${p.trangThaiPhieu === 'Đang mượn' ? `<button class="btn btn-success btn-sm" onclick="openTra(${p.maPhieu})">Trả lại</button>` : ''}
+              <button class="btn btn-danger btn-icon" onclick="deletePhieu(${p.maPhieu})" title="Xóa">🗑️</button>
+            </div>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    function openAddPhieu() {
+      const nvSelect = document.getElementById('fMaNV');
+      const tbSelect = document.getElementById('fMaTB');
+      nvSelect.innerHTML = DB.getNhanVien().map(nv => `<option value="${nv.maNV}">${nv.maNV} - ${nv.hoTen}</option>`).join('');
+      tbSelect.innerHTML = DB.getThietBi().filter(x => x.trangThai === 'Sẵn sàng').map(tb => `<option value="${tb.maTB}">${tb.maTB} - ${tb.tenTB}</option>`).join('');
+
+      if (tbSelect.options.length === 0) {
+        tbSelect.innerHTML = '<option value="">Không có thiết bị sẵn sàng</option>';
+      }
+
+      // Default: 7 days from now
+      const d = new Date();
+      d.setDate(d.getDate() + 7);
+      document.getElementById('fNgayTraDK').value = d.toISOString().split('T')[0];
+
+      UI.openModal('modalPhieu');
+    }
+
+    function savePhieu() {
+      const maNV = document.getElementById('fMaNV').value;
+      const maTB = document.getElementById('fMaTB').value;
+      const ngayTraDK = document.getElementById('fNgayTraDK').value;
+
+      if (!maNV || !maTB || !ngayTraDK) {
+        UI.showToast('Vui lòng chọn đầy đủ thông tin!', 'warning');
+        return;
+      }
+
+      DB.addPhieu({
+        maNV,
+        maTB,
+        ngayMuon: new Date().toISOString(),
+        ngayTraDuKien: ngayTraDK,
+        ngayTraThucTe: null,
+        tinhTrangKhiTra: null,
+        trangThaiPhieu: 'Đang mượn' // Admin direct creation instantly approves
+      });
+
+      UI.showToast('Tạo phiếu mượn thành công!', 'success');
+      UI.closeModal('modalPhieu');
+      loadAll();
+    }
+
+    async function duyetMuon(maPhieu, isApproved) {
+      if (isApproved) {
+         DB.duyetMuon(maPhieu, true);
+         UI.showToast('Đã duyệt phiếu mượn!', 'success');
+      } else {
+         const confirmed = await UI.confirm('Bạn có chắc muốn từ chối yêu cầu mượn này?');
+         if (!confirmed) return;
+         DB.duyetMuon(maPhieu, false);
+         UI.showToast('Đã từ chối phiếu mượn!', 'success');
+      }
+      loadAll();
+    }
+
+    async function duyetTra(maPhieu, isApproved) {
+      if (isApproved) {
+         DB.duyetTra(maPhieu, true);
+         UI.showToast('Đã nhận lại thiết bị!', 'success');
+      } else {
+         const confirmed = await UI.confirm('Từ chối trả sẽ đưa thiết bị về trạng thái đang mượn. Tiếp tục?');
+         if (!confirmed) return;
+         DB.duyetTra(maPhieu, false);
+         UI.showToast('Đã từ chối trả thiết bị!', 'warning');
+      }
+      loadAll();
+    }
+
+    function openTra(maPhieu) {
+      document.getElementById('traPhieuId').value = maPhieu;
+      document.getElementById('fTinhTrang').value = '';
+      UI.openModal('modalTra');
+    }
+
+    function confirmTra() {
+      const maPhieu = parseInt(document.getElementById('traPhieuId').value);
+      const tinhTrang = document.getElementById('fTinhTrang').value.trim() || 'Bình thường';
+
+      DB.traThietBi(maPhieu, tinhTrang);
+      UI.showToast('Trả thiết bị thành công!', 'success');
+      UI.closeModal('modalTra');
+      loadAll();
+    }
+
+    async function deletePhieu(maPhieu) {
+      const confirmed = await UI.confirm('Bạn có chắc muốn xóa phiếu mượn #' + maPhieu + '?');
+      if (!confirmed) return;
+
+      DB.deletePhieu(maPhieu);
+      UI.showToast('Xóa phiếu mượn thành công!', 'success');
+      loadAll();
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quản Lý Thiết Bị | Hệ Thống QL Tài Sản</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <div class="logo-icon">🏢</div>
+          <div class="logo-text"><h2>Quản Lý Tài Sản</h2><p>Hệ Thống Thiết Bị</p></div>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-section">Tổng quan</div>
+        <a href="admin.html">Trang chủ</a>
+        <div class="nav-section">Quản lý</div>
+        <a href="ql-nhanvien.html">Quản lý Nhân viên</a>
+        <a href="ql-loaitb.html">Quản lý Loại TB</a>
+        <a href="ql-thietbi.html" class="active">Quản lý Thiết bị</a>
+        <a href="ql-phieumuon.html">Phiếu mượn trả</a>
+        <div class="nav-section">Báo cáo</div>
+        <a href="baocao.html">Thống kê & Báo cáo</a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar">👤</div>
+          <div class="user-details"><h4 id="userName">Admin</h4><p id="userRole">Quản lý</p></div>
+        </div>
+        <button class="btn-logout" onclick="Auth.logout()">Đăng xuất</button>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <div class="page-header">
+        <h1>Quản Lý Thiết Bị</h1>
+        <p>Quản lý toàn bộ tài sản thiết bị trong hệ thống</p>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>Danh sách Thiết Bị</h3>
+          <div class="btn-group">
+            <div class="filter-bar">
+              <input type="text" id="searchTB" placeholder="🔍 Tìm kiếm..." oninput="loadTable()">
+              <select id="filterLoai" onchange="loadTable()">
+                <option value="">Tất cả loại</option>
+              </select>
+              <select id="filterTrangThai" onchange="loadTable()">
+                <option value="">Tất cả trạng thái</option>
+                <option value="Sẵn sàng">Sẵn sàng</option>
+                <option value="Đang dùng">Đang dùng</option>
+                <option value="Hỏng">Hỏng</option>
+              </select>
+            </div>
+            <button class="btn btn-primary" onclick="openAdd()">Thêm thiết bị</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Mã TB</th>
+                  <th>Tên thiết bị</th>
+                  <th>Loại</th>
+                  <th>Ngày nhập</th>
+                  <th>Số lượng</th>
+                  <th>Đơn giá</th>
+                  <th>Trạng thái</th>
+                  <th>Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="tableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-overlay" id="modalTB">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="modalTitle">Thêm Thiết Bị</h3>
+        <button class="modal-close" onclick="UI.closeModal('modalTB')">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="editMode" value="add">
+        <div class="form-group no-icon">
+          <label>Mã thiết bị</label>
+          <input type="text" id="fMaTB" placeholder="VD: TB008" maxlength="10">
+        </div>
+        <div class="form-group no-icon">
+          <label>Tên thiết bị</label>
+          <input type="text" id="fTenTB" placeholder="VD: Laptop Dell XPS 15">
+        </div>
+        <div class="form-group no-icon">
+          <label>Loại thiết bị</label>
+          <select id="fMaLoai"></select>
+        </div>
+        <div class="form-group no-icon">
+          <label>Ngày nhập</label>
+          <input type="date" id="fNgayNhap">
+        </div>
+        <div class="form-group no-icon">
+          <label>Số lượng</label>
+          <input type="number" id="fSoLuong" value="1" min="1">
+        </div>
+        <div class="form-group no-icon">
+          <label>Đơn giá (VNĐ)</label>
+          <input type="number" id="fDonGia" placeholder="VD: 25000000" min="0">
+        </div>
+        <div class="form-group no-icon">
+          <label>Trạng thái</label>
+          <select id="fTrangThai">
+            <option value="Sẵn sàng">Sẵn sàng</option>
+            <option value="Đang dùng">Đang dùng</option>
+            <option value="Hỏng">Hỏng</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="UI.closeModal('modalTB')">Hủy</button>
+        <button class="btn btn-primary" onclick="saveTB()">Lưu</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    const user = Auth.requireAuth('admin');
+    if (user) { UI.loadUserInfo(); initFilters(); loadTable(); }
+
+    function initFilters() {
+      const loaiSelect = document.getElementById('filterLoai');
+      const fMaLoaiSelect = document.getElementById('fMaLoai');
+
+      DB.getLoaiTB().forEach(loai => {
+        loaiSelect.innerHTML += `<option value="${loai.maLoai}">${loai.tenLoai}</option>`;
+        fMaLoaiSelect.innerHTML += `<option value="${loai.maLoai}">${loai.tenLoai}</option>`;
+      });
+    }
+
+    function loadTable() {
+      const search = (document.getElementById('searchTB').value || '').toLowerCase();
+      const filterLoai = document.getElementById('filterLoai').value;
+      const filterTT = document.getElementById('filterTrangThai').value;
+
+      let list = DB.getThietBi();
+      if (search) list = list.filter(x => x.maTB.toLowerCase().includes(search) || x.tenTB.toLowerCase().includes(search));
+      if (filterLoai) list = list.filter(x => x.maLoai === filterLoai);
+      if (filterTT) list = list.filter(x => x.trangThai === filterTT);
+
+      const loaiMap = {};
+      DB.getLoaiTB().forEach(l => loaiMap[l.maLoai] = l.tenLoai);
+
+      const tbody = document.getElementById('tableBody');
+      if (list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="icon">💻</div><h3>Không tìm thấy thiết bị</h3></div></td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = list.map(tb => `
+        <tr>
+          <td><strong>${tb.maTB}</strong></td>
+          <td>${tb.tenTB}</td>
+          <td><span class="badge badge-info">${loaiMap[tb.maLoai] || tb.maLoai}</span></td>
+          <td>${UI.formatDate(tb.ngayNhap)}</td>
+          <td>${tb.soLuong || 1}</td>
+          <td>${UI.formatMoney(tb.donGia)}</td>
+          <td>${UI.statusBadge(tb.trangThai)}</td>
+          <td>
+            <div class="btn-group">
+              <button class="btn btn-warning btn-sm" onclick="openEdit('${tb.maTB}')">Sửa</button>
+              <button class="btn btn-danger btn-icon" onclick="deleteTB('${tb.maTB}')" title="Xóa">🗑️</button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function openAdd() {
+      document.getElementById('editMode').value = 'add';
+      document.getElementById('modalTitle').textContent = 'Thêm Thiết Bị Mới';
+      document.getElementById('fMaTB').value = '';
+      document.getElementById('fMaTB').disabled = false;
+      document.getElementById('fTenTB').value = '';
+      document.getElementById('fNgayNhap').value = new Date().toISOString().split('T')[0];
+      document.getElementById('fSoLuong').value = 1;
+      document.getElementById('fDonGia').value = '';
+      document.getElementById('fTrangThai').value = 'Sẵn sàng';
+      UI.openModal('modalTB');
+    }
+
+    function openEdit(maTB) {
+      const tb = DB.getThietBiById(maTB);
+      if (!tb) return;
+      document.getElementById('editMode').value = 'edit';
+      document.getElementById('modalTitle').textContent = 'Sửa Thông Tin Thiết Bị';
+      document.getElementById('fMaTB').value = tb.maTB;
+      document.getElementById('fMaTB').disabled = true;
+      document.getElementById('fTenTB').value = tb.tenTB;
+      document.getElementById('fMaLoai').value = tb.maLoai;
+      document.getElementById('fNgayNhap').value = tb.ngayNhap;
+      document.getElementById('fSoLuong').value = tb.soLuong || 1;
+      document.getElementById('fDonGia').value = tb.donGia;
+      document.getElementById('fTrangThai').value = tb.trangThai;
+      UI.openModal('modalTB');
+    }
+
+    function saveTB() {
+      const mode = document.getElementById('editMode').value;
+      const data = {
+        maTB: document.getElementById('fMaTB').value.trim(),
+        tenTB: document.getElementById('fTenTB').value.trim(),
+        maLoai: document.getElementById('fMaLoai').value,
+        ngayNhap: document.getElementById('fNgayNhap').value,
+        soLuong: parseInt(document.getElementById('fSoLuong').value) || 1,
+        donGia: parseFloat(document.getElementById('fDonGia').value) || 0,
+        trangThai: document.getElementById('fTrangThai').value,
+      };
+
+      if (!data.maTB || !data.tenTB) {
+        UI.showToast('Vui lòng nhập đầy đủ Mã TB và Tên thiết bị!', 'warning');
+        return;
+      }
+
+      if (mode === 'add') {
+        if (!DB.addThietBi(data)) {
+          UI.showToast('Mã thiết bị đã tồn tại!', 'error');
+          return;
+        }
+        UI.showToast('Thêm thiết bị thành công!', 'success');
+      } else {
+        DB.updateThietBi(data.maTB, data);
+        UI.showToast('Cập nhật thiết bị thành công!', 'success');
+      }
+
+      UI.closeModal('modalTB');
+      loadTable();
+    }
+
+    async function deleteTB(maTB) {
+      const confirmed = await UI.confirm('Bạn có chắc muốn xóa thiết bị ' + maTB + '?');
+      if (!confirmed) return;
+
+      const result = DB.deleteThietBi(maTB);
+      if (result.success) {
+        UI.showToast('Xóa thiết bị thành công!', 'success');
+        loadTable();
+      } else {
+        UI.showToast(result.message, 'error');
+      }
+    }
+  </script>
+</body>
+</html>

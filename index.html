@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Hệ thống quản lý tài sản thiết bị - Đăng nhập">
+  <title>Đăng Nhập | Hệ Thống Quản Lý Tài Sản Thiết Bị</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-card">
+      <div class="login-logo">
+        <div class="icon">🏢</div>
+        <h1>Hệ Thống Quản Lý</h1>
+        <p>Tài Sản & Thiết Bị</p>
+      </div>
+
+      <form id="loginForm" onsubmit="return handleLogin(event)">
+        <div class="form-group">
+          <label for="txtMaNV">Mã nhân viên</label>
+          <div class="input-wrapper">
+            <input type="text" id="txtMaNV" placeholder="Nhập mã nhân viên (VD: AD01)" required autocomplete="off">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="txtMatKhau">Mật khẩu</label>
+          <div class="input-wrapper">
+            <input type="password" id="txtMatKhau" placeholder="Nhập mật khẩu" required>
+          </div>
+        </div>
+
+        <div class="checkbox-group">
+          <input type="checkbox" id="chkHienMK" onchange="togglePassword()">
+          <label for="chkHienMK">Hiển thị mật khẩu</label>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-full" id="btnLogin">
+           Đăng Nhập
+        </button>
+      </form>
+
+      <div style="margin-top:24px; text-align:center;">
+        <p style="font-size:12px; color:var(--text-light);">
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container"></div>
+
+  <script src="app.js"></script>
+  <script>
+    function togglePassword() {
+      const input = document.getElementById('txtMatKhau');
+      const cb = document.getElementById('chkHienMK');
+      input.type = cb.checked ? 'text' : 'password';
+    }
+
+    function handleLogin(e) {
+      e.preventDefault();
+      const maNV = document.getElementById('txtMaNV').value.trim();
+      const matKhau = document.getElementById('txtMatKhau').value.trim();
+
+      if (!maNV || !matKhau) {
+        UI.showToast('Vui lòng nhập đầy đủ thông tin!', 'warning');
+        return false;
+      }
+
+      const user = Auth.login(maNV, matKhau);
+      if (user) {
+        UI.showToast('Đăng nhập thành công! Xin chào ' + user.hoTen, 'success');
+        setTimeout(() => {
+          if (user.vaiTro === 'Quản lý') {
+            window.location.href = 'admin.html';
+          } else {
+            window.location.href = 'nhanvien.html';
+          }
+        }, 800);
+      } else {
+        UI.showToast('Sai tài khoản hoặc mật khẩu!', 'error');
+        document.getElementById('txtMatKhau').value = '';
+        document.getElementById('txtMatKhau').focus();
+      }
+      return false;
+    }
+
+    // Auto-focus
+    document.getElementById('txtMaNV').focus();
+  </script>
+  <script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBTUq1_ZPaFWdzfMm_iewRr2gzm079N9Bc",
+  authDomain: "quanlythietbitaisan-676ce.firebaseapp.com",
+  projectId: "quanlythietbitaisan-676ce",
+  storageBucket: "quanlythietbitaisan-676ce.firebasestorage.app",
+  messagingSenderId: "162823413824",
+  appId: "1:162823413824:web:b7325e4294cc2ab7887fa5",
+  measurementId: "G-X27K3PZ2VC"
+};
+const app = initializeApp(firebaseConfig);
+</script
+</body>
+</html>

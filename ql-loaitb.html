@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quản Lý Loại Thiết Bị | Hệ Thống QL Tài Sản</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <div class="logo-icon">🏢</div>
+          <div class="logo-text"><h2>Quản Lý Tài Sản</h2><p>Hệ Thống Thiết Bị</p></div>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-section">Tổng quan</div>
+        <a href="admin.html">Trang chủ</a>
+        <div class="nav-section">Quản lý</div>
+        <a href="ql-nhanvien.html">Quản lý Nhân viên</a>
+        <a href="ql-loaitb.html" class="active">Quản lý Loại TB</a>
+        <a href="ql-thietbi.html">Quản lý Thiết bị</a>
+        <a href="ql-phieumuon.html">Phiếu mượn trả</a>
+        <div class="nav-section">Báo cáo</div>
+        <a href="baocao.html">Thống kê & Báo cáo</a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar">👤</div>
+          <div class="user-details"><h4 id="userName">Admin</h4><p id="userRole">Quản lý</p></div>
+        </div>
+        <button class="btn-logout" onclick="Auth.logout()">Đăng xuất</button>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <div class="page-header">
+        <h1>Quản Lý Loại Thiết Bị</h1>
+        <p>Phân loại và quản lý các loại thiết bị trong hệ thống</p>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>Danh sách Loại Thiết Bị</h3>
+          <button class="btn btn-primary" onclick="openAdd()">Thêm loại mới</button>
+        </div>
+        <div class="card-body">
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Mã loại</th>
+                  <th>Tên loại</th>
+                  <th>Số thiết bị</th>
+                  <th>Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="tableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-overlay" id="modalLoai">
+    <div class="modal" style="max-width:420px">
+      <div class="modal-header">
+        <h3 id="modalTitle">Thêm Loại Thiết Bị</h3>
+        <button class="modal-close" onclick="UI.closeModal('modalLoai')">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="editMode" value="add">
+        <div class="form-group no-icon">
+          <label>Mã loại</label>
+          <input type="text" id="fMaLoai" placeholder="VD: TAB" maxlength="10" style="text-transform:uppercase">
+        </div>
+        <div class="form-group no-icon">
+          <label>Tên loại</label>
+          <input type="text" id="fTenLoai" placeholder="VD: Máy tính bảng">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="UI.closeModal('modalLoai')">Hủy</button>
+        <button class="btn btn-primary" onclick="saveLoai()">Lưu</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    const user = Auth.requireAuth('admin');
+    if (user) { UI.loadUserInfo(); loadTable(); }
+
+    function loadTable() {
+      const list = DB.getLoaiTB();
+      const thietBi = DB.getThietBi();
+      const tbody = document.getElementById('tableBody');
+
+      if (list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4"><div class="empty-state"><div class="icon">📁</div><h3>Chưa có loại thiết bị</h3></div></td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = list.map(loai => {
+        const count = thietBi.filter(x => x.maLoai === loai.maLoai).length;
+        return `
+          <tr>
+            <td><strong>${loai.maLoai}</strong></td>
+            <td>${loai.tenLoai}</td>
+            <td><span class="badge badge-pink">${count} thiết bị</span></td>
+            <td>
+              <div class="btn-group">
+                <button class="btn btn-warning btn-sm" onclick="openEdit('${loai.maLoai}')">Sửa</button>
+                <button class="btn btn-danger btn-icon" onclick="deleteLoai('${loai.maLoai}')" title="Xóa">🗑️</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function openAdd() {
+      document.getElementById('editMode').value = 'add';
+      document.getElementById('modalTitle').textContent = 'Thêm Loại Thiết Bị Mới';
+      document.getElementById('fMaLoai').value = '';
+      document.getElementById('fMaLoai').disabled = false;
+      document.getElementById('fTenLoai').value = '';
+      UI.openModal('modalLoai');
+    }
+
+    function openEdit(maLoai) {
+      const loai = DB.getLoaiTB().find(x => x.maLoai === maLoai);
+      if (!loai) return;
+      document.getElementById('editMode').value = 'edit';
+      document.getElementById('modalTitle').textContent = 'Sửa Loại Thiết Bị';
+      document.getElementById('fMaLoai').value = loai.maLoai;
+      document.getElementById('fMaLoai').disabled = true;
+      document.getElementById('fTenLoai').value = loai.tenLoai;
+      UI.openModal('modalLoai');
+    }
+
+    function saveLoai() {
+      const mode = document.getElementById('editMode').value;
+      const maLoai = document.getElementById('fMaLoai').value.trim().toUpperCase();
+      const tenLoai = document.getElementById('fTenLoai').value.trim();
+
+      if (!maLoai || !tenLoai) {
+        UI.showToast('Vui lòng nhập đầy đủ thông tin!', 'warning');
+        return;
+      }
+
+      if (mode === 'add') {
+        if (!DB.addLoaiTB({ maLoai, tenLoai })) {
+          UI.showToast('Mã loại đã tồn tại!', 'error');
+          return;
+        }
+        UI.showToast('Thêm loại thiết bị thành công!', 'success');
+      } else {
+        DB.updateLoaiTB(maLoai, { tenLoai });
+        UI.showToast('Cập nhật loại thiết bị thành công!', 'success');
+      }
+
+      UI.closeModal('modalLoai');
+      loadTable();
+    }
+
+    async function deleteLoai(maLoai) {
+      const confirmed = await UI.confirm('Bạn có chắc muốn xóa loại ' + maLoai + '?');
+      if (!confirmed) return;
+
+      const result = DB.deleteLoaiTB(maLoai);
+      if (result.success) {
+        UI.showToast('Xóa loại thiết bị thành công!', 'success');
+        loadTable();
+      } else {
+        UI.showToast(result.message, 'error');
+      }
+    }
+  </script>
+</body>
+</html>

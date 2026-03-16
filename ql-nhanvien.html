@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quản Lý Nhân Viên | Hệ Thống QL Tài Sản</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <div class="logo-icon">🏢</div>
+          <div class="logo-text"><h2>Quản Lý Tài Sản</h2><p>Hệ Thống Thiết Bị</p></div>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-section">Tổng quan</div>
+        <a href="admin.html">Trang chủ</a>
+        <div class="nav-section">Quản lý</div>
+        <a href="ql-nhanvien.html" class="active">Quản lý Nhân viên</a>
+        <a href="ql-loaitb.html">Quản lý Loại TB</a>
+        <a href="ql-thietbi.html">Quản lý Thiết bị</a>
+        <a href="ql-phieumuon.html">Phiếu mượn trả</a>
+        <div class="nav-section">Báo cáo</div>
+        <a href="baocao.html">Thống kê & Báo cáo</a>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar">👤</div>
+          <div class="user-details"><h4 id="userName">Admin</h4><p id="userRole">Quản lý</p></div>
+        </div>
+        <button class="btn-logout" onclick="Auth.logout()">Đăng xuất</button>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <div class="page-header">
+        <h1>Quản Lý Nhân Viên</h1>
+        <p>Thêm, sửa, xóa thông tin nhân viên trong hệ thống</p>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>Danh sách Nhân viên</h3>
+          <div class="btn-group">
+            <div class="filter-bar">
+              <input type="text" id="searchNV" placeholder="🔍 Tìm kiếm nhân viên..." oninput="loadTable()">
+            </div>
+            <button class="btn btn-primary" onclick="openAdd()">Thêm mới</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Mã NV</th>
+                  <th>Họ tên</th>
+                  <th>Phòng ban</th>
+                  <th>Số ĐT</th>
+                  <th>Vai trò</th>
+                  <th>Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="tableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal Add/Edit -->
+  <div class="modal-overlay" id="modalNV">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="modalTitle">Thêm Nhân Viên</h3>
+        <button class="modal-close" onclick="UI.closeModal('modalNV')">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="editMode" value="add">
+        <div class="form-group no-icon">
+          <label>Mã nhân viên</label>
+          <input type="text" id="fMaNV" placeholder="VD: NV05" maxlength="10">
+        </div>
+        <div class="form-group no-icon">
+          <label>Họ và tên</label>
+          <input type="text" id="fHoTen" placeholder="Nhập họ tên">
+        </div>
+        <div class="form-group no-icon">
+          <label>Phòng ban</label>
+          <input type="text" id="fPhongBan" placeholder="Nhập phòng ban">
+        </div>
+        <div class="form-group no-icon">
+          <label>Số điện thoại</label>
+          <input type="text" id="fSoDT" placeholder="Nhập số điện thoại" maxlength="15">
+        </div>
+        <div class="form-group no-icon">
+          <label>Mật khẩu</label>
+          <input type="text" id="fMatKhau" placeholder="Nhập mật khẩu">
+        </div>
+        <div class="form-group no-icon">
+          <label>Vai trò</label>
+          <select id="fVaiTro">
+            <option value="Nhân viên">Nhân viên</option>
+            <option value="Quản lý">Quản lý</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="UI.closeModal('modalNV')">Hủy</button>
+        <button class="btn btn-primary" onclick="saveNV()">Lưu</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+  <script>
+    const user = Auth.requireAuth('admin');
+    if (user) { UI.loadUserInfo(); loadTable(); }
+
+    function loadTable() {
+      const search = (document.getElementById('searchNV').value || '').toLowerCase();
+      let list = DB.getNhanVien();
+      if (search) {
+        list = list.filter(x =>
+          x.maNV.toLowerCase().includes(search) ||
+          x.hoTen.toLowerCase().includes(search) ||
+          (x.phongBan || '').toLowerCase().includes(search)
+        );
+      }
+
+      const tbody = document.getElementById('tableBody');
+      if (list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><div class="icon">👥</div><h3>Chưa có nhân viên</h3><p>Hãy thêm nhân viên mới</p></div></td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = list.map(nv => `
+        <tr>
+          <td><strong>${nv.maNV}</strong></td>
+          <td>${nv.hoTen}</td>
+          <td>${nv.phongBan || '—'}</td>
+          <td>${nv.soDT || '—'}</td>
+          <td><span class="badge ${nv.vaiTro === 'Quản lý' ? 'badge-pink' : 'badge-info'}">${nv.vaiTro}</span></td>
+          <td>
+            <div class="btn-group">
+              <button class="btn btn-warning btn-sm" onclick="openEdit('${nv.maNV}')">Sửa</button>
+              <button class="btn btn-danger btn-icon" onclick="deleteNV('${nv.maNV}')" title="Xóa">🗑️</button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function openAdd() {
+      document.getElementById('editMode').value = 'add';
+      document.getElementById('modalTitle').textContent = 'Thêm Nhân Viên Mới';
+      document.getElementById('fMaNV').value = '';
+      document.getElementById('fMaNV').disabled = false;
+      document.getElementById('fHoTen').value = '';
+      document.getElementById('fPhongBan').value = '';
+      document.getElementById('fSoDT').value = '';
+      document.getElementById('fMatKhau').value = '';
+      document.getElementById('fVaiTro').value = 'Nhân viên';
+      UI.openModal('modalNV');
+    }
+
+    function openEdit(maNV) {
+      const nv = DB.getNhanVienById(maNV);
+      if (!nv) return;
+      document.getElementById('editMode').value = 'edit';
+      document.getElementById('modalTitle').textContent = 'Sửa Thông Tin Nhân Viên';
+      document.getElementById('fMaNV').value = nv.maNV;
+      document.getElementById('fMaNV').disabled = true;
+      document.getElementById('fHoTen').value = nv.hoTen;
+      document.getElementById('fPhongBan').value = nv.phongBan || '';
+      document.getElementById('fSoDT').value = nv.soDT || '';
+      document.getElementById('fMatKhau').value = nv.matKhau;
+      document.getElementById('fVaiTro').value = nv.vaiTro;
+      UI.openModal('modalNV');
+    }
+
+    function saveNV() {
+      const mode = document.getElementById('editMode').value;
+      const data = {
+        maNV: document.getElementById('fMaNV').value.trim(),
+        hoTen: document.getElementById('fHoTen').value.trim(),
+        phongBan: document.getElementById('fPhongBan').value.trim(),
+        soDT: document.getElementById('fSoDT').value.trim(),
+        matKhau: document.getElementById('fMatKhau').value.trim(),
+        vaiTro: document.getElementById('fVaiTro').value,
+      };
+
+      if (!data.maNV || !data.hoTen || !data.matKhau) {
+        UI.showToast('Vui lòng nhập đầy đủ Mã NV, Họ tên và Mật khẩu!', 'warning');
+        return;
+      }
+
+      if (mode === 'add') {
+        if (!DB.addNhanVien(data)) {
+          UI.showToast('Mã nhân viên đã tồn tại!', 'error');
+          return;
+        }
+        UI.showToast('Thêm nhân viên thành công!', 'success');
+      } else {
+        DB.updateNhanVien(data.maNV, data);
+        UI.showToast('Cập nhật nhân viên thành công!', 'success');
+      }
+
+      UI.closeModal('modalNV');
+      loadTable();
+    }
+
+    async function deleteNV(maNV) {
+      const confirmed = await UI.confirm('Bạn có chắc muốn xóa nhân viên ' + maNV + '?');
+      if (!confirmed) return;
+
+      const result = DB.deleteNhanVien(maNV);
+      if (result.success) {
+        UI.showToast('Xóa nhân viên thành công!', 'success');
+        loadTable();
+      } else {
+        UI.showToast(result.message, 'error');
+      }
+    }
+  </script>
+</body>
+</html>
